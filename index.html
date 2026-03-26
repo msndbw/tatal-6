@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جداول التقاعد الاختياري</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════ HEADER ══════ -->
+<header>
+  <div class="hdr">
+    <div class="hdr-logo">🏛️</div>
+    <div class="hdr-text">
+      <h1>إنشاء جداول التقاعد الاختياري</h1>
+    </div>
+    <div class="hdr-badge no-print">النظام الرسمي</div>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════ FORM ══════ -->
+<div class="card no-print">
+  <div class="card-head">
+    <div class="card-head-icon">📋</div>
+    <h2>بيانات المشترك</h2>
+  </div>
+  <div class="card-body">
+    <div class="form-grid">
+
+      <!-- الاسم -->
+      <div class="field">
+        <div class="field-lbl">👤 الاسم الكامل</div>
+        <input class="ctrl" type="text" id="nameInput" placeholder="مثال: أحمد محمد علي">
+      </div>
+
+      <!-- الجنس -->
+      <div class="field">
+        <div class="field-lbl">⚥ الجنس <span class="req">*</span></div>
+        <select class="ctrl" id="genderSelect">
+          <option value="male">ذكر</option>
+          <option value="female">أنثى</option>
+        </select>
+      </div>
+
+      <!-- تاريخ الميلاد -->
+      <div class="field">
+        <div class="field-lbl">🎂 تاريخ الميلاد <span class="req">*</span></div>
+        <div class="date-slots">
+          <div class="date-slot slot-day">
+            <div class="slot-pill">اليوم</div>
+            <select class="ctrl" id="birthDay"></select>
+          </div>
+          <div class="date-slot slot-month">
+            <div class="slot-pill">الشهر</div>
+            <select class="ctrl" id="birthMonth"></select>
+          </div>
+          <div class="date-slot slot-year">
+            <div class="slot-pill">السنة</div>
+            <select class="ctrl" id="birthYear"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- الفئة الحالية -->
+      <div class="field">
+        <div class="field-lbl">📊 الفئة الحالية <span class="opt">اختياري</span></div>
+        <select class="ctrl" id="currentCategory"></select>
+        <div class="field-hint">إذا تُرك فارغاً تُحسب الفئة تلقائياً</div>
+      </div>
+
+      <!-- تاريخ الانتساب -->
+      <div class="sub-group">
+        <div class="sub-title">
+          📅 تاريخ الانتساب
+          <span class="sub-opt">(اختياري — إذا تُرك فارغاً يبدأ الحساب من العمر الحالي)</span>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <div class="date-slots">
+            <div class="date-slot slot-day">
+              <div class="slot-pill">اليوم</div>
+              <select class="ctrl" id="joinDay"></select>
+            </div>
+            <div class="date-slot slot-month">
+              <div class="slot-pill">الشهر</div>
+              <select class="ctrl" id="joinMonth"></select>
+            </div>
+            <div class="date-slot slot-year">
+              <div class="slot-pill">السنة</div>
+              <select class="ctrl" id="joinYear"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- الخدمة السابقة -->
+      <div class="sub-group">
+        <div class="sub-title">
+          🗂️ الخدمة السابقة
+          <span class="sub-opt">(اختياري — مطلوب إذا كان العمر ≥ 50 ولا يوجد تاريخ انتساب)</span>
+        </div>
+        <div class="field">
+          <div class="field-lbl">عدد السنوات</div>
+          <input class="ctrl" type="number" id="priorYears" min="0" max="40" placeholder="0">
+        </div>
+        <div class="field">
+          <div class="field-lbl">عدد الأشهر</div>
+          <input class="ctrl" type="number" id="priorMonths" min="0" max="11" placeholder="0">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TOOLBAR ══════ -->
+<div class="no-print">
+  <div class="toolbar">
+    <button class="btn btn-generate" id="calcBtn">⚙️ إنشاء الخطط التقاعدية</button>
+    <button class="btn btn-pdf"      id="pdfBtn"     style="display:none">📄 تصدير PDF</button>
+    <button class="btn btn-share"    id="shareBtn"   style="display:none">🔗 مشاركة</button>
+    <button class="btn btn-copyall"  id="copyAllBtn" style="display:none">📋 نسخ الكل</button>
+    <button class="btn btn-print"    id="printBtn">🖨️ طباعة</button>
+    <button class="btn btn-reset"    id="resetBtn">🔄 تهيئة</button>
+  </div>
+</div>
+
+<div id="results"></div>
+</main>
+
+<div id="toast">✅ تم النسخ</div>
+
+<!-- ══════ PLAN NAVIGATION BAR ══════ -->
+<div id="planNav" class="plan-nav no-print" style="display:none">
+  <div class="plan-nav-wrap">
+    <span class="pnav-label">🗂️ انتقل:</span>
+    <div class="plan-nav-inner" id="planNavBtns"></div>
+    <button class="pnav-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="أعلى الصفحة">⬆</button>
+  </div>
+</div>
+
+<!-- ══════ PLAN SELECTOR MODAL ══════ -->
+<div id="planSelectorModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">📄 اختر الخطط للتصدير</h3>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-subtitle" id="modalSubtitle">اختر الخطط التي تريد تضمينها في ملف PDF</div>
+      <div class="modal-plans" id="modalPlansList"></div>
+      <div id="shareLinkContainer" style="display:none">
+        <button class="share-copy-btn" id="shareLinkCopyBtn">📋 نسخ الرابط</button>
+        <div class="share-link-box" id="shareLinkBox"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-select-all" id="modalSelectAll">تحديد الكل</button>
+      <button class="btn-modal-cancel" id="modalCancelBtn">إلغاء</button>
+      <button class="btn-modal-confirm" id="modalConfirmBtn">📄 تصدير</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
