@@ -810,6 +810,44 @@ body.has-nav main { padding-bottom: 90px; }
         <div class="field-hint">إذا تُرك فارغاً تُحسب الفئة تلقائياً</div>
       </div>
 
+      <!-- الاستقرار على فئة محددة قبل التقاعد -->
+      <div class="field" style="grid-column:1/-1">
+        <div class="field-lbl">🎯 الاستقرار على فئة محددة قبل التقاعد؟</div>
+        <div style="display:flex;gap:14px;margin-top:4px;flex-wrap:wrap;align-items:center">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.93rem;font-weight:600;color:var(--navy-md)">
+            <input type="radio" name="fixedCatOpt" id="fixedCatNo" value="no" checked
+              style="accent-color:var(--navy-md);width:17px;height:17px;cursor:pointer">
+            لا
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.93rem;font-weight:600;color:var(--navy-md)">
+            <input type="radio" name="fixedCatOpt" id="fixedCatYes" value="yes"
+              style="accent-color:var(--gold);width:17px;height:17px;cursor:pointer">
+            نعم
+          </label>
+          <div id="fixedCatSelectWrap" style="display:none;flex:1;min-width:180px;">
+            <select class="ctrl" id="fixedCatSelect">
+              <option value="">— اختر الفئة المستهدفة —</option>
+              <option value="1">الفئة الأولى — 350,000 د.ع</option>
+              <option value="2">الفئة الثانية — 455,000 د.ع</option>
+              <option value="3">الفئة الثالثة — 560,000 د.ع</option>
+              <option value="4">الفئة الرابعة — 665,000 د.ع</option>
+              <option value="5">الفئة الخامسة — 770,000 د.ع</option>
+              <option value="6">الفئة السادسة — 875,000 د.ع</option>
+              <option value="7">الفئة السابعة — 980,000 د.ع</option>
+              <option value="8">الفئة الثامنة — 1,085,000 د.ع</option>
+              <option value="9">الفئة التاسعة — 1,190,000 د.ع</option>
+              <option value="10">الفئة العاشرة — 1,295,000 د.ع</option>
+              <option value="11">الفئة الحادية عشر — 1,400,000 د.ع</option>
+              <option value="12">الفئة الثانية عشر — 1,505,000 د.ع</option>
+              <option value="13">الفئة الثالثة عشر — 1,610,000 د.ع</option>
+              <option value="14">الفئة الرابعة عشر — 1,715,000 د.ع</option>
+              <option value="15">الفئة الخامسة عشر — 1,750,000 د.ع</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-hint" id="fixedCatHint">إذا اخترت نعم، ستُحسب آخر 5 سنوات قبل التقاعد جميعها بالفئة المختارة</div>
+      </div>
+
       <!-- تاريخ الانتساب -->
       <div class="sub-group">
         <div class="sub-title">
@@ -859,7 +897,7 @@ body.has-nav main { padding-bottom: 90px; }
   <div class="toolbar">
     <button class="btn btn-generate" id="calcBtn">⚙️ إنشاء الخطط التقاعدية</button>
     <button class="btn btn-pdf"      id="pdfBtn"     style="display:none">📄 تصدير PDF</button>
-    <button class="btn btn-share"    id="shareBtn"   style="display:none">🔗 مشاركة</button>
+    <button class="btn btn-share"    id="shareBtn"   style="display:none">🔗 مشاركة كرابط</button>
     <button class="btn btn-copyall"  id="copyAllBtn" style="display:none">📋 نسخ الكل</button>
     <button class="btn btn-print"    id="printBtn">🖨️ طباعة</button>
     <button class="btn btn-reset"    id="resetBtn">🔄 تهيئة</button>
@@ -995,44 +1033,46 @@ function idealStartCat(sa, ta) {
   return Math.min(Math.max(15 - g, 1), 15);
 }
 
-function buildCatPlan(sa, ta, sc) {
+// targetCat: الفئة المستهدفة لآخر 5 سنوات (اختياري — إذا لم يُمرَّر يُستخدم 15)
+function buildCatPlan(sa, ta, sc, targetCat) {
   sa = Math.min(Math.max(sa, 0), 100);
   ta = Math.min(Math.max(ta, sa), 100);
   if (ta - sa > 60) ta = sa + 60;
 
+  // الفئة المستهدفة: إذا حُدِّدت يجب ألا تقل عن sc
+  const TC = (targetCat && targetCat >= 1 && targetCat <= 15)
+    ? Math.max(targetCat, sc)   // لا يمكن أن تكون المستهدفة أقل من البداية
+    : 15;
+
   let rows = [];
   for (let a = sa; a <= ta; a++) rows.push({ age: a, cat: null });
-  const total     = rows.length;          // عدد السنوات الكلي شامل سنة التقاعد
-  const last5Start= Math.max(total - 5, 0); // أول مؤشر لآخر 5 سنوات
+  const total      = rows.length;
+  const last5Start = Math.max(total - 5, 0);
 
-  // ── الفئة القصوى القابلة للوصول في الـ 5 سنوات الأخيرة ──────────────────
-  // إذا كان الوقت قبل آخر 5 سنوات = 0 (مدة كلية ≤ 5)،
-  // نضع آخر 5 بأعلى فئة يمكن بلوغها بالترقي التدريجي من sc
-  const yearsBeforeLast5 = last5Start;      // سنوات متاحة للترقي قبل الـ 5
-  const maxReachableAt5  = Math.min(15, sc + yearsBeforeLast5); // أعلى فئة ممكنة عند بداية آخر 5
+  const yearsBeforeLast5 = last5Start;
+  // أعلى فئة يمكن الوصول إليها بالترقي التدريجي قبل آخر 5 سنوات
+  const maxReachableAt5 = Math.min(TC, sc + yearsBeforeLast5);
 
-  if (sc >= 15) {
-    // ── الحالة 1: نبدأ من 15 مباشرة ───────────────────────────────────────
-    rows.forEach(r => r.cat = 15);
+  if (sc >= TC) {
+    // ── الحالة 1: الفئة الحالية تساوي أو تتجاوز المستهدفة ─────────────────
+    rows.forEach(r => r.cat = TC);
 
   } else if (yearsBeforeLast5 === 0) {
     // ── الحالة 2: المدة الكلية ≤ 5 سنوات ──────────────────────────────────
-    // ترقّ تدريجي بمعدل سنة/درجة طوال المدة، آخر سنة = أعلى فئة
+    // ترقّ تدريجي طوال المدة نحو TC
     let cat = sc;
     for (let i = 0; i < total; i++) {
-      rows[i].cat = Math.min(15, cat);
-      if (i < total - 1) cat = Math.min(15, cat + 1);
+      rows[i].cat = Math.min(TC, cat);
+      if (i < total - 1) cat = Math.min(TC, cat + 1);
     }
 
-  } else if (yearsBeforeLast5 >= (15 - sc)) {
-    // ── الحالة 3: وقت كافٍ للوصول لـ 15 ─────────────────────────────────
-    // ضع الترقيات في المنتصف، آخر 5 عند 15
-    // الإسناد أولاً ثم الترقّي يضمن عرض sc الصحيح في السنة الأولى (rem=0)
-    let rem = yearsBeforeLast5 - (15 - sc);
+  } else if (yearsBeforeLast5 >= (TC - sc)) {
+    // ── الحالة 3: وقت كافٍ للوصول للمستهدفة TC ───────────────────────────
+    let rem = yearsBeforeLast5 - (TC - sc);
     for (let i = 0; i < total; i++) {
-      if      (i < rem)         rows[i].cat = sc;                          // ثابت في البداية
-      else if (i < last5Start)  rows[i].cat = Math.min(15, sc + (i - rem)); // ترقّي تدريجي
-      else                      rows[i].cat = 15;                          // آخر 5 عند 15
+      if      (i < rem)         rows[i].cat = sc;
+      else if (i < last5Start)  rows[i].cat = Math.min(TC, sc + (i - rem));
+      else                      rows[i].cat = TC;
     }
 
   } else {
@@ -1040,11 +1080,9 @@ function buildCatPlan(sa, ta, sc) {
     let cat = sc;
     for (let i = 0; i < total; i++) {
       if (i < last5Start) {
-        // قبل آخر 5: ترقّ كل سنة
-        rows[i].cat = Math.min(15, cat);
-        cat = Math.min(15, cat + 1);
+        rows[i].cat = Math.min(TC, cat);
+        cat = Math.min(TC, cat + 1);
       } else {
-        // آخر 5 سنوات: ثابت عند أعلى فئة وصلنا إليها
         rows[i].cat = maxReachableAt5;
       }
     }
@@ -1062,9 +1100,15 @@ function buildCatPlan(sa, ta, sc) {
 /* ─────────────────────────────────────
    PENSION
 ───────────────────────────────────── */
+// FIXED_CAT_FOR_AVG: لم يعد مطلوباً لأن buildCatPlan يُدير الفئة المستهدفة في آخر 5 سنوات مباشرة
+// نبقيه null دائماً للتوافق مع الكود الآخر
+let FIXED_CAT_FOR_AVG = null;
+// TARGET_CAT_FOR_LAST5: الفئة المستهدفة لآخر 5 سنوات (null = 15 الافتراضي)
+let TARGET_CAT_FOR_LAST5 = null;
+
 function avgLast5(plan) {
   if (!plan.length) return 350000;
-  const last = plan.slice(-5);          // آخر 5 سنوات (أو أقل إذا كانت الخطة أقصر)
+  const last = plan.slice(-5);
   return last.reduce((a, r) => a + SAL[r.cat], 0) / last.length;
 }
 function calcPension(avg, mo) {
@@ -1076,10 +1120,9 @@ function calcPension(avg, mo) {
    PLAN BUILDERS (original – accurate)
 ───────────────────────────────────── */
 function mkResult(svc, birth, sa, ta, buy, useUC, uc, joinDate) {
-  // الخدمة الكلية تُحسب من تاريخ الانتساب إلى تاريخ التقاعد مباشرةً
-  // هذا أدق من تقسيمها إلى ماضٍ + مستقبل (يتجنب فروق التقريب في الأشهر)
-  let fc      = useUC ? Math.min(Math.max(uc, 1), 15) : idealStartCat(sa, ta);
-  let plan    = buildCatPlan(sa, ta, fc);
+  let fc   = useUC ? Math.min(Math.max(uc, 1), 15) : idealStartCat(sa, ta);
+  // TARGET_CAT_FOR_LAST5: الفئة المستهدفة لآخر 5 سنوات (null = 15 افتراضياً)
+  let plan = buildCatPlan(sa, ta, fc, TARGET_CAT_FOR_LAST5);
   let retDate = dateAtAge(birth, ta);
   let tot;
   if (joinDate) {
@@ -1653,7 +1696,9 @@ function buildCard(plan, ci, nm, g, age, prevMo) {
           <span class="dv">
             ${N(plan.avg)} د.ع
             <span style="font-size:.71rem;color:var(--muted);font-weight:400;display:block;margin-top:2px">
-              ${plan.yearsPlan.slice(-5).map(r=>`ف${r.cat}:${N(SAL[r.cat])}`).join(' + ')}
+              ${TARGET_CAT_FOR_LAST5
+                ? `مستقر على الفئة ${TARGET_CAT_FOR_LAST5} — ${N(SAL[TARGET_CAT_FOR_LAST5])} د.ع`
+                : plan.yearsPlan.slice(-5).map(r=>`ف${r.cat}:${N(SAL[r.cat])}`).join(' + ')}
             </span>
           </span>
         </div>
@@ -1744,6 +1789,25 @@ function generate() {
     const cv  = document.getElementById('currentCategory').value;
     const useUC = cv !== '';
     const uc  = useUC ? +cv : 1;
+
+    // الفئة المحددة لآخر 5 سنوات (اختيارية)
+    const fixedCatYes = document.getElementById('fixedCatYes').checked;
+    const fixedCatVal = document.getElementById('fixedCatSelect').value;
+
+    if (fixedCatYes && !fixedCatVal) {
+      showAlert('⚠️ يرجى اختيار الفئة المستهدفة', 'w'); return;
+    }
+
+    // التحقق: الفئة المستهدفة يجب أن تكون ≥ الفئة الحالية
+    if (fixedCatYes && fixedCatVal && useUC) {
+      if (+fixedCatVal < uc) {
+        showAlert(`❌ الفئة المستهدفة (${fixedCatVal}) لا يمكن أن تكون أقل من الفئة الحالية (${uc}). يرجى اختيار فئة أعلى أو مساوية.`, 'e');
+        return;
+      }
+    }
+
+    TARGET_CAT_FOR_LAST5 = (fixedCatYes && fixedCatVal) ? +fixedCatVal : null;
+    FIXED_CAT_FOR_AVG = null; // دائماً null — الحساب يتم عبر buildCatPlan
 
     // Join date
     const jD = +document.getElementById('joinDay').value;
@@ -2029,9 +2093,15 @@ function reset() {
   document.getElementById('joinDay').innerHTML = '<option value="">اليوم</option>';
   document.getElementById('priorYears').value  = '';
   document.getElementById('priorMonths').value = '';
+  document.getElementById('fixedCatNo').checked = true;
+  document.getElementById('fixedCatYes').checked = false;
+  document.getElementById('fixedCatSelectWrap').style.display = 'none';
+  document.getElementById('fixedCatSelect').value = '';
+  FIXED_CAT_FOR_AVG = null;
+  TARGET_CAT_FOR_LAST5 = null;
   document.getElementById('results').innerHTML = '';
   document.getElementById('pdfBtn').style.display      = 'none';
-  document.getElementById('shareBtn').style.display    = 'none';
+  document.getElementById('shareBtn').style.display     = 'none';
   document.getElementById('copyAllBtn').style.display  = 'none';
   const nav = document.getElementById('planNav');
   if (nav) { nav.style.display = 'none'; }
@@ -2320,7 +2390,7 @@ function loadSharedView() {
 
     const formEl=document.querySelector('.card.no-print');
     if (formEl) formEl.style.display='none';
-    ['calcBtn','shareBtn','printBtn','resetBtn','copyAllBtn'].forEach(id=>{
+    ['calcBtn','printBtn','resetBtn','copyAllBtn','shareBtn'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.style.display='none';
     });
 
@@ -2371,6 +2441,14 @@ function loadSharedView() {
 ───────────────────────────────────── */
 window.onload = function () {
   populate();
+
+  // راديو: إظهار/إخفاء قائمة الفئة المحددة
+  document.querySelectorAll('input[name="fixedCatOpt"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      const wrap = document.getElementById('fixedCatSelectWrap');
+      wrap.style.display = this.value === 'yes' ? 'flex' : 'none';
+    });
+  });
 
   // هل هذا رابط مشاركة؟
   if (!loadSharedView()) {
